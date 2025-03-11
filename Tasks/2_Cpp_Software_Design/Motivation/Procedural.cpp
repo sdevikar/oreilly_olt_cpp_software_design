@@ -103,7 +103,8 @@ struct Point
 enum class ShapeType
 {
    circle,
-   square
+   square,
+   triangle
 };
 
 class Shape
@@ -182,6 +183,33 @@ Square::Square( double side )
    , center_{}
 {}
 
+//---- <Triangle.h> ---------------------------------------------------------------------------------
+
+//#include <Shape.h>
+//#include <Point.h>
+
+class Triangle : public Shape
+{
+ public:
+   explicit Triangle( double side );
+
+   double side() const noexcept { return side_; }
+
+ private:
+   double side_;
+};
+
+
+//---- <Circle.cpp> -------------------------------------------------------------------------------
+
+//#include <Circle.h>
+
+Triangle::Triangle( double side )
+: Shape( ShapeType::triangle )
+   , side_{ side }
+{}
+
+
 
 //---- <Draw.h> -----------------------------------------------------------------------------------
 
@@ -207,6 +235,12 @@ void draw( Circle const& circle, gl::Color color )
 void draw( Square const& square, gl::Color color )
 {
    std::cout << "square: side=" << square.side()
+             << ", color = " << gl::to_string(color) << '\n';
+}
+
+void draw( Triangle const& triangle, gl::Color color )
+{
+   std::cout << "triange: side=" << triangle.side()
              << ", color = " << gl::to_string(color) << '\n';
 }
 
@@ -245,6 +279,9 @@ void drawAllShapes( Shapes const& shapes )
             break;
          case ShapeType::square:
             draw( *static_cast<Square const*>( shape.get() ), gl::Color::green );
+            break;
+         case ShapeType::triangle:
+            draw( *static_cast<Triangle const*>( shape.get() ), gl::Color::green );
             break;
       }
    }
@@ -301,6 +338,7 @@ int main()
    shapes.emplace_back( std::make_unique<Circle>( 2.3 ) );
    shapes.emplace_back( std::make_unique<Square>( 1.2 ) );
    shapes.emplace_back( std::make_unique<Circle>( 4.1 ) );
+   shapes.emplace_back( std::make_unique<Triangle>( 5 ) );
 
    drawAllShapes( shapes );
 

@@ -190,6 +190,44 @@ void Square::draw() const
              << ", color = " << gl::to_string(color_) << '\n';
 }
 
+//---- <Triangle.h> ---------------------------------------------------------------------------------
+
+//#include <Shape.h>
+//#include <Point.h>
+//#include <GraphicsLibrary.h>
+
+class Triangle : public Shape
+{
+ public:
+   explicit Triangle( double side, gl::Color color );
+
+   double side  () const noexcept { return side_; }
+
+   void draw() const override;
+
+ private:
+   double side_;
+   gl::Color color_{};
+};
+
+
+//---- <Triangle.cpp> -------------------------------------------------------------------------------
+
+//#include <Triangle.h>
+#include <iostream>
+
+Triangle::Triangle( double side, gl::Color color )
+   : side_{ side }
+   , color_{ color }
+{}
+
+void Triangle::draw() const
+{
+   std::cout << "triangle: side=" << side_
+             << ", color = " << gl::to_string(color_) << '\n';
+}
+
+
 
 //---- <Shapes.h> ---------------------------------------------------------------------------------
 
@@ -270,6 +308,7 @@ int main()
    shapes.emplace_back( std::make_unique<Circle>( 2.3, gl::Color::red ) );
    shapes.emplace_back( std::make_unique<Square>( 1.2, gl::Color::green ) );
    shapes.emplace_back( std::make_unique<Circle>( 4.1, gl::Color::blue ) );
+   shapes.emplace_back( std::make_unique<Triangle>( 4.1, gl::Color::blue ) );
 
    drawAllShapes( shapes );
 
