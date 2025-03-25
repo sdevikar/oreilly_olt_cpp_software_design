@@ -150,48 +150,18 @@ struct Point
 };
 
 
-//---- <ShapeVisitor.h> ---------------------------------------------------------------------------
-
-class Circle;
-class Square;
-
-class ShapeVisitor
-{
- public:
-   virtual ~ShapeVisitor() = default;
-
-   virtual void visit( Circle const& ) const = 0;
-   virtual void visit( Square const& ) const = 0;
-};
-
-
-//---- <Shape.h> ----------------------------------------------------------------------------------
-
-//#include <ShapeVisitor.h>
-
-class Shape
-{
- public:
-   virtual ~Shape() = default;
-
-   virtual void accept( ShapeVisitor const& v ) = 0;
-};
-
-
 //---- <Circle.h> ---------------------------------------------------------------------------------
 
 //#include <Point.h>
 //#include <Shape.h>
 
-class Circle : public Shape
+class Circle
 {
  public:
    explicit Circle( double radius )
       : radius_{ radius }
       , center_{}
    {}
-
-   void accept( ShapeVisitor const& v ) override { v.visit(*this); }
 
    double radius() const { return radius_; }
    Point  center() const { return center_; }
@@ -207,15 +177,13 @@ class Circle : public Shape
 //#include <Point.h>
 //#include <Shape.h>
 
-class Square : public Shape
+class Square
 {
  public:
    explicit Square( double side )
       : side_{ side }
       , center_{}
    {}
-
-   void accept( ShapeVisitor const& v ) override { v.visit(*this); }
 
    double side() const { return side_; }
    Point center() const { return center_; }
@@ -232,7 +200,7 @@ class Square : public Shape
 #include <memory>
 #include <vector>
 
-using Shapes = std::vector<std::unique_ptr<Shape>>;
+// using Shapes = std::vector<std::unique_ptr<Shape>>;
 
 
 //==== ARCHITECTURAL BOUNDARY =====================================================================
@@ -242,22 +210,21 @@ using Shapes = std::vector<std::unique_ptr<Shape>>;
 
 //#include <Circle.h>
 //#include <Square.h>
-//#include <ShapeVisitor.h>
 //#include <GraphicsLibrary.h>
 #include <iostream>
 
-class GLDrawer : public ShapeVisitor
+class GLDrawer
 {
  public:
    explicit GLDrawer( gl::Color color ) : color_{color} {}
 
-   void visit( Circle const& circle ) const override
+   void operator()( Circle const& circle ) const 
    {
       std::cout << "circle: radius=" << circle.radius()
                 << ", color = " << gl::to_string(color_) << '\n';
    }
 
-   void visit( Square const& square ) const override
+   void operator()( Square const& square ) const 
    {
       std::cout << "square: side=" << square.side()
                 << ", color = " << gl::to_string(color_) << '\n';
@@ -267,10 +234,11 @@ class GLDrawer : public ShapeVisitor
    gl::Color color_{};
 };
 
-
 //---- <DrawAllShapes.h> --------------------------------------------------------------------------
+#include <variant>
 
-//#include <Shapes.h>
+using Shape = std::variant<Circle, Square>;
+using Shapes = std::vector<Shape>;
 
 void drawAllShapes( Shapes const& shapes );
 
@@ -280,23 +248,44 @@ void drawAllShapes( Shapes const& shapes );
 //#include <DrawAllShapes.h>
 //#include <GLDrawer.h>
 
-void drawAllShapes( Shapes const& shapes )
+void drawAllShapes(Shapes const& shapes )
 {
+   GLDrawer drawer{gl::Color::red};
+
    for( auto const& shape : shapes )
    {
-      shape->accept( GLDrawer{gl::Color::red} );
+      std::visit(drawer, shape);
    }
 }
 
-
 //---- <Area.h> -----------------------------------------------------------------------------------
-
-#define _USE_MATH_DEFINES
 #include <cmath>
+#define _USE_MATH_DEFINES
+class Area
+{
+   public:
+   Area(){}
 
-// TODO: Implement the 'area()' operations as a classic visitor. Hint: the area of a
-//       circle is 'radius*radius*M_PI', the area of a square is 'side*side'.
+   double operator()( Circle const& circle ) const
+   {
+      return circle.radius()*circle.radius()*M_PI;
+   }
 
+   double operator()( Square const& square ) const
+   {
+      return square.side()*square.side();
+   }
+};
+
+void calcAllAreas(Shapes const& shapes )
+{
+   Area area{};
+
+   for( auto const& shape : shapes )
+   {
+      std::cout << std::visit(area, shape) << std::endl;
+   }
+}
 
 //---- <Main.cpp> ---------------------------------------------------------------------------------
 
@@ -308,13 +297,21 @@ void drawAllShapes( Shapes const& shapes )
 
 int main()
 {
+
    Shapes shapes{};
 
-   shapes.emplace_back( std::make_unique<Circle>( 2.3 ) );
-   shapes.emplace_back( std::make_unique<Square>( 1.2 ) );
-   shapes.emplace_back( std::make_unique<Circle>( 4.1 ) );
+   Circle circle{1.0};
+   Square square{2.5};
+   
+   shapes.emplace_back( Circle{ 2.3 } );
+   shapes.emplace_back( Square{ 1.2 } );
+   shapes.emplace_back( Circle{ 4.1 } );
 
-   drawAllShapes( shapes );
+   
+
+   drawAllShapes(shapes);
+   calcAllAreas(shapes);
+
 
    return EXIT_SUCCESS;
 }
