@@ -148,21 +148,6 @@ struct Point
 };
 
 
-//---- <DrawStrategy.h> ---------------------------------------------------------------------------
-
-class Circle;
-class Square;
-
-class DrawStrategy
-{
- public:
-   virtual ~DrawStrategy() = default;
-
-   virtual void draw( Circle const& circle ) const = 0;
-   virtual void draw( Square const& square ) const = 0;
-};
-
-
 //---- <Shape.h> ----------------------------------------------------------------------------------
 
 class Shape
@@ -178,14 +163,15 @@ class Shape
 
 //#include <Point.h>
 //#include <Shape.h>
-//#include <DrawStrategy.h>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 
 class Circle : public Shape
 {
  public:
-   Circle( double radius, std::unique_ptr<DrawStrategy>&& drawer )
+   using DrawStrategy = std::function<void(Circle const&)>;
+   Circle( double radius, DrawStrategy drawer )
       : radius_{ radius }
       , center_{}
       , drawer_{ std::move(drawer) }
@@ -195,7 +181,7 @@ class Circle : public Shape
       }
    }
 
-   void draw() const override { drawer_->draw(*this); }
+   void draw() const override { drawer_(*this); }
 
    double radius() const { return radius_; }
    Point  center() const { return center_; }
@@ -203,7 +189,8 @@ class Circle : public Shape
  private:
    double radius_;
    Point center_;
-   std::unique_ptr<DrawStrategy> drawer_;
+   DrawStrategy drawer_;
+
 };
 
 
@@ -211,14 +198,14 @@ class Circle : public Shape
 
 //#include <Point.h>
 //#include <Shape.h>
-//#include <DrawStrategy.h>
 #include <memory>
 #include <stdexcept>
 
 class Square : public Shape
 {
  public:
-   Square( double side, std::unique_ptr<DrawStrategy>&& drawer )
+   using DrawStrategy = std::function<void(Square const&)>;
+   Square( double side, DrawStrategy drawer )
       : side_{ side }
       , center_{}
       , drawer_{ std::move(drawer) }
@@ -228,7 +215,7 @@ class Square : public Shape
       }
    }
 
-   void draw() const override { drawer_->draw(*this); }
+   void draw() const override { drawer_(*this); }
 
    double side() const { return side_; }
    Point  center() const { return center_; }
@@ -236,7 +223,7 @@ class Square : public Shape
  private:
    double side_;
    Point center_;
-   std::unique_ptr<DrawStrategy> drawer_;
+   DrawStrategy drawer_;
 };
 
 
@@ -254,24 +241,23 @@ using Shapes = std::vector<std::unique_ptr<Shape>>;
 
 //---- <GLDrawer.h> -------------------------------------------------------------------------------
 
-//#include <DrawStrategy.h>
 //#include <Circle.h>
 //#include <Square.h>
 //#include <GraphicsLibrary.h>
 #include <iostream>
 
-class GLDrawer : public DrawStrategy
+class GLDrawer
 {
  public:
    explicit GLDrawer( gl::Color color ) : color_{color} {}
 
-   void draw( Circle const& circle ) const override
+   void operator()( Circle const& circle ) const
    {
       std::cout << "circle: radius=" << circle.radius()
                 << ", color = " << gl::to_string(color_) << '\n';
    }
 
-   void draw( Square const& square ) const override
+   void operator()( Square const& square ) const
    {
       std::cout << "square: side=" << square.side()
                 << ", color = " << gl::to_string(color_) << '\n';
@@ -315,12 +301,13 @@ int main()
 {
    Shapes shapes{};
 
+   // In this case, GLDrawer becomes the std::function<void(Circle const&)>
    shapes.emplace_back(
-      std::make_unique<Circle>( 2.3, std::make_unique<GLDrawer>(gl::Color::red) ) );
+      std::make_unique<Circle>( 2.3, GLDrawer(gl::Color::red) ) );
    shapes.emplace_back(
-      std::make_unique<Square>( 1.2, std::make_unique<GLDrawer>(gl::Color::green) ) );
+      std::make_unique<Square>( 1.2, GLDrawer(gl::Color::green) ) );
    shapes.emplace_back(
-      std::make_unique<Circle>( 4.1, std::make_unique<GLDrawer>(gl::Color::blue) ) );
+      std::make_unique<Circle>( 4.1, GLDrawer(gl::Color::blue) ) );
 
    drawAllShapes( shapes );
 
