@@ -200,9 +200,9 @@ class Triangle : public Shape
 };
 
 
-//---- <Circle.cpp> -------------------------------------------------------------------------------
+//---- <Triangle.cpp> -------------------------------------------------------------------------------
 
-//#include <Circle.h>
+//#include <Triange.h>
 
 Triangle::Triangle( double side )
 : Shape( ShapeType::triangle )
@@ -219,6 +219,7 @@ Triangle::Triangle( double side )
 
 void draw( Circle const& circle, gl::Color color );
 void draw( Square const& square, gl::Color color );
+void draw( Triangle const& triangle, gl::Color color );
 
 
 //---- <Draw.cpp> ---------------------------------------------------------------------------------

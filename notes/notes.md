@@ -12,11 +12,15 @@
 - See `oreilly_olt_cpp_software_design/Tasks/2_Cpp_Software_Design/Motivation/ObjectOriented.cpp`
 - This gets rid of the `ShapeType` enum altogether and hands the responsibility of draw API to individual class
 - The `Shapes` base class has a pure virtual function called `draw` that the concrete class will implement
-- But notice that we're still dependent of the graphics library
+- But notice that all shapes are still dependent of the graphics library
 
 ## Visitor design pattern
 
-### Classic implementation
+- Useful pattern to add features to a class without changing the class itself. This is achieved by delegating the responsibility of implementing the feature to the so called visitor class. There can be a visitor implementation for a given feature. In other words, the features are implemented as small dedicated classes instead of a function within the original class
+- The class that needs a new feature provides its own instance (in other words, registers) with the so called visitor class
+- The visitor then calls the necessary methods on the class to get whatever information it needs to implement the feature. e.g. We can implement a class called `Area`. This class would be a concrete implementation of a Visitor interface class. A visitor class that is supposed to calculate areas of shapes will call the getRadius() method on a circle, getSideLength() on a square, etc. to calculate the area.
+
+### Visitor classic implementation
 
 - See `oreilly_olt_cpp_software_design/Tasks/2_Cpp_Software_Design/Visitor`
 - The core idea for the visitor class is to add a new functionality "easily". We have the left side (Visitor hierarchy) and the right side (the client hierarchy). In the classic visitor design pattern, both sides accept the other side's instance using designated methods.
@@ -32,7 +36,7 @@ Consider following code:
 
 ```cpp
 struct Print{
-    
+
     void operator()(int value) {std::cout << "I am an int:" << value << std::endl;}
     void operator()(double value) {std::cout << "I am a double:" << value << std::endl;}
 };
@@ -60,7 +64,7 @@ Notice here that the left and right args of the visit function are the left and 
 
 ### Refactoring the shapes program
 
-Take a look at the refacrored version of `oreilly_olt_cpp_software_design/Tasks/2_Cpp_Software_Design/Visitor/Visitor_Refactoring.cpp`. Here, we have:
+Take a look at the refactored version of `oreilly_olt_cpp_software_design/Tasks/2_Cpp_Software_Design/Visitor/Visitor_Refactoring.cpp`. Here, we have:
 
 - `using Shape = std::variant<Circle, Square>;` i.e. declared a variant to use all kinds of shapes and made a vector out of them `using Shapes = std::vector<Shape>;`
 - In the vector of Shapes, we insert the instances `shapes.emplace_back( std::make_unique<Circle>( 4.1 ) );`
@@ -71,8 +75,7 @@ In effect, we don't have any base classes
 #### Advantages and disadvantages
 
 - This solution, as we can check from benchmarking, is almost twice as fast as the object oriented design because there are no abstract classes, virtual functions, pointers and redirection etc.
-- Bad: Adding new shapes is still not easy. If your intention is to support adding and deleting shapes, this is not the pattern for you
-
+- Bad: Adding new shapes is still not easy. **If your intention is to support adding and deleting shapes, this is not the pattern for you**
 
 ## Strategy design pattern
 
@@ -90,16 +93,16 @@ Going back to the object oriented ideas where we can have something like this:
 
 - If Shape has `draw` pure virtual function, everything inheriting from it will have to _implement_ it and that will create dependency on the graphics library (because `draw()` will have to call some graphics library functions)
 - To avoid this, we can further inherit from concrete implementations. See `oreilly_olt_cpp_software_design/PDF/2_Cpp_Software_Design.pdf`. slide# 121 where `OpenGlCircle`, `MetalCircle` are inheriting from `Circle` and overriding `draw()`
-- The issue here is that when we add more functions, like `Serialize`, the inheritence layers will keep growing. So this isn't feasible.
+- The issue here is that when we add more functions, like `Serialize`, the inheritance layers will keep growing. So this isn't feasible.
 
 ### Solution
 
-- (Direct) Inheritence is rarely an answer. Choose composition instead.
-- In strategy, instead of using inheritence, we use composition. e.g. Circle will be constructed by injecting (passing to its constructor), an object that is able to provide implementation from `draw`
+- (Direct) Inheritance is rarely an answer. Choose composition instead.
+- In strategy, instead of using inheritance, we use composition. e.g. Circle will be constructed by injecting (passing to its constructor), an object that is able to provide implementation from `draw`
   - In this case, the Circle will be the context and the entity that provides `draw()` implementation would be the `strategy`
   - The strategy side therefore will actually have a base class that declares a pure virtual `draw()`
 - Note that the strategy implementation is not just limited to injecting the implementation through constructor. We can also use templates. e.g. in std::vector we pass the allocator as the second template parameter
-- Strategy pattern is used all over the place without us realizing it in some other ways. For example,  by passing lambda functions
+- Strategy pattern is used all over the place without us realizing it in some other ways. For example, by passing lambda functions
 
 #### Classic Implementation
 
@@ -141,19 +144,26 @@ In the implementation above, observe:
 There are two issues here:
 
 1. There's a cyclic dependency (which is fine and can be taken care of by forward declarations)
-2. Circle, Square, etc. indirectly know about each other via DrawStrategy. In order to compile Circle, Drawstrategy needs to be compiled, which needs Square and potentially all other shapes. So we have created indirect dependency
+2. Circle, Square, etc. indirectly know about each other via DrawStrategy. In order to compile Circle, DrawStrategy needs to be compiled, which needs Square and potentially all other shapes. So we have created indirect dependency
 
-To resolve this indirect depenency, we can create a Strategy class for each shape. i.e. DrawStrategyCircle, DrawStrategySquare, etc. But this will lead to base class explosion. We can use templates instead.
+To resolve this indirect dependency, we can create a Strategy class for each shape. i.e. DrawStrategyCircle, DrawStrategySquare, etc. But this will lead to base class explosion. We can use templates instead.
 Note that at this point, the GLDrawer will still have to inherit from multiple DrawStrategy classes. e.g DrawStrategy<Square>, DrawStrategy<Circle>, etc.
 
 #### Modern alternative to classing Strategy implementation
 
 - `std::function<T>` takes a callable type as a template parameter
 - So, using injections like `using DrawStrategy = std::function<void(Square const&)>;` we can implement strategy design pattern
+- In case of the shapes example, the callable object is `GLDrawer` class that implements the `()` operator and based on the argument to the `()` oeprator, appropriate binding takes place.
 
 Even with the modern implementation, strategy feels like a more classical "Reference based" semantics implementation. In modern C++, the goal is to move more and more towards value semantics
 
-
 ## External Polymorphism
 
-[External Polymorphism Design Patter](images/external_polymorphism_dp.png)
+![External Polymorphism Design Pattern](images/external_polymorphism_dp.png)
+
+This is a useful pattern when we do not have the capability to change the existing classes. So, instead, we wrap around the classes we want to add polymorphic behavior to. For example, in the image above,
+
+- circle and square are the classes we do not want to change
+- so we introduce the `ShapeConcept` class, which is pretty much the same as the Shape virtual class we have been using. However, it is a class that we introduce as opposed to it being a part of the design from the beginning
+- The ShapeModel class inherits from the `ShapeConcept`, it is templated on the class it's supposed to wrap around (i.e. circle, square, etc.), and also holds the instance of that class. This class also delegates some functionality to the class it's wrapping around.
+- This implementation is the next level of strategy design pattern. Strategy "extracted" some functionality from a class (extract = provide external implementation). With external polymorphism, the entire functionality of the class is extracted. Let's see how.
