@@ -324,7 +324,7 @@ class ShapeModel : public ShapeConcept
 #include <memory>
 #include <vector>
 
-using Shapes = std::vector<std::unique_ptr<Shape>>;
+using Shapes = std::vector<std::unique_ptr<ShapeConcept>>;
 
 
 //---- <DrawAllShapes.h> --------------------------------------------------------------------------
@@ -359,9 +359,9 @@ int main()
 {
    Shapes shapes{};
 
-   shapes.emplace_back( std::make_unique<Circle>( 2.3, gl::Color::red   ) );
-   shapes.emplace_back( std::make_unique<Square>( 1.2, gl::Color::green ) );
-   shapes.emplace_back( std::make_unique<Circle>( 4.1, gl::Color::blue  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{2.3, gl::Color::red }  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2, gl::Color::green }  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1, gl::Color::red }  ) );
 
    drawAllShapes( shapes );
 

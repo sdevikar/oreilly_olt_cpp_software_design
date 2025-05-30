@@ -167,3 +167,16 @@ This is a useful pattern when we do not have the capability to change the existi
 - so we introduce the `ShapeConcept` class, which is pretty much the same as the Shape virtual class we have been using. However, it is a class that we introduce as opposed to it being a part of the design from the beginning
 - The ShapeModel class inherits from the `ShapeConcept`, it is templated on the class it's supposed to wrap around (i.e. circle, square, etc.), and also holds the instance of that class. This class also delegates some functionality to the class it's wrapping around.
 - This implementation is the next level of strategy design pattern. Strategy "extracted" some functionality from a class (extract = provide external implementation). With external polymorphism, the entire functionality of the class is extracted. Let's see how.
+
+### Code changes walkthrough
+
+- **starter code heirarchy**
+  - In `Tasks/2_Cpp_Software_Design/External_Polymorphism/ExternalPolymorphism_1.cpp` we start with the OO implementation of Shapes.
+    - `std::vector<std::unique_ptr<Shape>>;` held all the Shape pointers
+    - `Shape` itself was a parent class for concrete shapes Circle, etc.
+    - Concrete shapes implemented the `draw` function, thereby introducing the dependency to the graphics library
+- **switching to external polymorphism heirarchy**
+  - now instead of the `Shape` parent class, we have the `ShapeConcept` which is the parent class of `ShapeModel`. Our goal is to extract all of the functionality of the concrete classes in the `ShapeModel` class
+  - Hence, `ShapeModel` is templated on the concrete type `ShapeT` (= circle, square, etc.), it implements `draw()` by delegating the call to the `free_draw` functions (as a temp placeholder) as appropriate
+  - Now the vector of unique pointers can hold `ShapeConcept` (because its a parent class of the concrete `ShapeModel` class that implements `draw`) and `drawAllShapes` should still work.
+  - Notice however that the `draw` is fully implemented externally and the args to it are passed by the `ShapeModel` class. Therefore, the args like `color` passed to concrete shapes are now obsolete.
