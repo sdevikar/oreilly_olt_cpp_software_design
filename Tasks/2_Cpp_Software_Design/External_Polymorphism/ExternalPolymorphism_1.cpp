@@ -144,41 +144,24 @@ struct Point
 };
 
 
-//---- <Shape.h> ----------------------------------------------------------------------------------
-
-class Shape
-{
- public:
-   virtual ~Shape() = default;
-
-   virtual void draw() const = 0;
-};
-
-
 //---- <Circle.h> ---------------------------------------------------------------------------------
 
-//#include <Shape.h>
 //#include <Point.h>
-//#include <GraphicsLibrary.h>
 
-class Circle : public Shape
+class Circle
 {
  public:
-   explicit Circle( double radius, gl::Color color )
+   explicit Circle( double radius )
       : radius_{ radius }
       , center_{}
-      , color_{ color }
    {}
 
    double radius() const { return radius_; }
    Point  center() const { return center_; }
 
-   void draw() const override;
-
  private:
    double radius_;
    Point center_;
-   gl::Color color_{};
 };
 
 
@@ -187,37 +170,28 @@ class Circle : public Shape
 //#include <Circle.h>
 #include <iostream>
 
-void Circle::draw() const
-{
-   std::cout << "circle: radius=" << radius_
-             << ", color = " << gl::to_string(color_) << '\n';
-}
-
 
 //---- <Square.h> ---------------------------------------------------------------------------------
 
-//#include <Shape.h>
 //#include <Point.h>
-//#include <GraphicsLibrary.h>
 
-class Square : public Shape
+
+class Square
 {
  public:
-   explicit Square( double side, gl::Color color )
+   explicit Square( double side)
       : side_{ side }
       , center_{}
-      , color_{ color }
    {}
 
    double side() const { return side_; }
    Point  center() const { return center_; }
 
-   void draw() const override;
 
  private:
    double side_;
    Point center_;
-   gl::Color color_{};
+
 };
 
 
@@ -225,13 +199,6 @@ class Square : public Shape
 
 //#include <Square.h>
 #include <iostream>
-
-void Square::draw() const
-{
-   std::cout << "square: side=" << side_
-             << ", color = " << gl::to_string(color_) << '\n';
-}
-
 
 //==== ARCHITECTURAL BOUNDARY =====================================================================
 
@@ -359,9 +326,9 @@ int main()
 {
    Shapes shapes{};
 
-   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{2.3, gl::Color::red }  ) );
-   shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2, gl::Color::green }  ) );
-   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1, gl::Color::red }  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{2.3}  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2}  ) );
+   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1 }  ) );
 
    drawAllShapes( shapes );
 
