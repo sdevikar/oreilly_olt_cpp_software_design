@@ -299,8 +299,24 @@ class GLDrawer
 //       of shapes.
 
 class ShapeConcept
-{};
+{
+   public:
+      virtual ~ShapeConcept() = default;
+      virtual void draw() const = 0;
+};
 
+template <typename ShapeT> // ShapeT could be Circle, Square, etc.
+class ShapeModel : public ShapeConcept
+{
+   public:
+      ShapeModel(ShapeT shape): shape_{shape} {}
+      void draw() const override {
+         free_draw(shape_, gl::Color::red);
+      }
+   private: 
+      ShapeT shape_;
+
+};
 
 //---- <Shapes.h> ---------------------------------------------------------------------------------
 
