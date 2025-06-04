@@ -323,14 +323,19 @@ void drawAllShapes( Shapes const& shapes )
 //#include <DrawAllShapes.h>
 #include <cstdlib>
 
+template <typename ShapeT, typename DrawStrategy>
+auto make_shape_model(ShapeT shape, DrawStrategy drawer)
+{
+   return std::make_unique<ShapeModel<ShapeT, DrawStrategy>>(shape, drawer);
+}
 
 int main()
 {
    Shapes shapes{};
    
-   shapes.emplace_back( std::make_unique<ShapeModel<Circle, GLDrawer>>( Circle{2.3}, GLDrawer{gl::Color::red}  ) );
-   // shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2}  ) );
-   // shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1 }  ) );
+   shapes.emplace_back( make_shape_model( Circle{2.3}, GLDrawer{gl::Color::red}  ) );
+   shapes.emplace_back( make_shape_model( Square{1.2}, GLDrawer{gl::Color::green}  ) );
+   shapes.emplace_back( make_shape_model( Circle{4.1}, GLDrawer{gl::Color::blue}  ) );
 
    drawAllShapes( shapes );
 
