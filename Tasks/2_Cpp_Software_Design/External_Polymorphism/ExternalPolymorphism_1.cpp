@@ -272,16 +272,17 @@ class ShapeConcept
       virtual void draw() const = 0;
 };
 
-template <typename ShapeT> // ShapeT could be Circle, Square, etc.
+template <typename ShapeT, typename DrawStrategy> // ShapeT could be Circle, Square, etc.
 class ShapeModel : public ShapeConcept
 {
    public:
-      ShapeModel(ShapeT shape): shape_{shape} {}
+      ShapeModel(ShapeT shape, DrawStrategy drawer): shape_{shape}, drawer_{drawer} {}
       void draw() const override {
-         free_draw(shape_, gl::Color::red);
+         drawer_(shape_);
       }
    private: 
       ShapeT shape_;
+      DrawStrategy drawer_;
 
 };
 
@@ -322,13 +323,14 @@ void drawAllShapes( Shapes const& shapes )
 //#include <DrawAllShapes.h>
 #include <cstdlib>
 
+
 int main()
 {
    Shapes shapes{};
-
-   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{2.3}  ) );
-   shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2}  ) );
-   shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1 }  ) );
+   
+   shapes.emplace_back( std::make_unique<ShapeModel<Circle, GLDrawer>>( Circle{2.3}, GLDrawer{gl::Color::red}  ) );
+   // shapes.emplace_back( std::make_unique<ShapeModel<Square>>( Square{1.2}  ) );
+   // shapes.emplace_back( std::make_unique<ShapeModel<Circle>>( Circle{4.1 }  ) );
 
    drawAllShapes( shapes );
 
