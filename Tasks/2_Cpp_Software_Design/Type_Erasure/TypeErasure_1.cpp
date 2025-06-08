@@ -220,30 +220,6 @@ class GLDrawer
 //#include <functional>
 //#include <stdexcept>
 
-class ShapeConcept
-{
- public:
-   virtual ~ShapeConcept() = default;
-
-   virtual void draw() const = 0;
-};
-
-template< typename ShapeT
-        , typename DrawStrategy >
-class ShapeModel : public ShapeConcept
-{
- public:
-   ShapeModel( ShapeT const& shape, DrawStrategy drawer )
-      : shape_{ shape }
-      , drawer_{ std::move(drawer) }
-   {}
-
-   void draw() const override { drawer_(shape_); }
-
- private:
-   ShapeT shape_;
-   DrawStrategy drawer_;
-};
 
 // Alternative implementation using std::function
 //   Advantages: Runtime flexibility
@@ -273,13 +249,56 @@ class ShapeModel : public ShapeConcept
 */
 
 
-//---- <Shapes.h> ---------------------------------------------------------------------------------
+
 
 //#include <Shape.h>
 #include <memory>
 #include <vector>
 
-using Shapes = std::vector<std::unique_ptr<ShapeConcept>>;
+class Shape
+{
+   public:
+   template< typename ShapeT, typename DrawStrategy >
+   Shape( ShapeT const& shape, DrawStrategy drawer ):
+   pimpl_{std::make_unique<ShapeModel<ShapeT,DrawStrategy>>( shape, std::move(drawer) )}
+   {}
+   void draw()const{pimpl_->draw();}
+
+   private:
+   
+   class ShapeConcept
+   {
+      public:
+      virtual ~ShapeConcept() = default;
+      
+      virtual void draw() const = 0;
+   };
+   
+   template< typename ShapeT
+   , typename DrawStrategy >
+   class ShapeModel : public ShapeConcept
+   {
+      public:
+      ShapeModel( ShapeT const& shape, DrawStrategy drawer )
+      : shape_{ shape }
+      , drawer_{ std::move(drawer) }
+      {}
+      
+      void draw() const override { drawer_(shape_); }
+      
+      private:
+      ShapeT shape_;
+      DrawStrategy drawer_;
+   };
+   
+   std::unique_ptr<ShapeConcept>pimpl_;
+   
+};
+
+
+//---- <Shapes.h> ---------------------------------------------------------------------------------
+
+using Shapes = std::vector<Shape>;
 
 
 //---- <DrawAllShapes.h> --------------------------------------------------------------------------
@@ -297,7 +316,7 @@ void drawAllShapes( Shapes const& shapes )
 {
    for( auto const& shape : shapes )
    {
-      shape->draw();
+      shape.draw();
    }
 }
 
@@ -310,22 +329,15 @@ void drawAllShapes( Shapes const& shapes )
 //#include <GLDrawer>
 #include <cstdlib>
 
-template< typename ShapeT, typename DrawStrategy >
-auto make_shape_model( ShapeT const& shape, DrawStrategy drawer )
-{
-   return std::make_unique<ShapeModel<ShapeT,DrawStrategy>>( shape, std::move(drawer) );
-}
+
 
 int main()
 {
    Shapes shapes{};
 
-   shapes.emplace_back(
-      make_shape_model( Circle{2.3}, GLDrawer(gl::Color::red) ) );
-   shapes.emplace_back(
-      make_shape_model( Square{1.2}, GLDrawer(gl::Color::green) ) );
-   shapes.emplace_back(
-      make_shape_model( Circle{4.1}, GLDrawer(gl::Color::blue) ) );
+   shapes.emplace_back(Circle{2.3}, GLDrawer(gl::Color::red) );
+   shapes.emplace_back(Square{1.2}, GLDrawer(gl::Color::green) );
+   shapes.emplace_back( Circle{4.1}, GLDrawer(gl::Color::blue) );
 
    drawAllShapes( shapes );
 
