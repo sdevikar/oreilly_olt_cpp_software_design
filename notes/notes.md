@@ -170,7 +170,7 @@ This is a useful pattern when we do not have the capability to change the existi
 
 ### Code changes walkthrough
 
-- **starter code heirarchy**
+- **starter code hierarchy**
   - In `Tasks/2_Cpp_Software_Design/External_Polymorphism/ExternalPolymorphism_1.cpp` we start with the OO implementation of Shapes.
     - `std::vector<std::unique_ptr<Shape>>;` held all the Shape pointers
     - `Shape` itself was a parent class for concrete shapes Circle, etc.
@@ -180,3 +180,139 @@ This is a useful pattern when we do not have the capability to change the existi
   - Hence, `ShapeModel` is templated on the concrete type `ShapeT` (= circle, square, etc.), it implements `draw()` by delegating the call to the `free_draw` functions (as a temp placeholder) as appropriate
   - Now the vector of unique pointers can hold `ShapeConcept` (because its a parent class of the concrete `ShapeModel` class that implements `draw`) and `drawAllShapes` should still work.
   - Notice however that the `draw` is fully implemented externally and the args to it are passed by the `ShapeModel` class. Therefore, the args like `color` passed to concrete shapes are now obsolete. Infact we can go ahead and remove everything that is related to `Shape` class at this point.
+
+### Introducing value semantics**
+
+- Using value semantics means getting rid of all the pointers. In our previous implementation, we had unique pointers to `ShapeConcept` stored in a `std::vector` like `using Shapes = std::vector<std::unique_ptr<ShapeConcept>>;`
+- Take a look at `Tasks/2_Cpp_Software_Design/Type_Erasure/TypeErasure_1.cpp`. To begin with, this class is the same as the `ExternalPolymorphism_1.cpp`. We will make the following design changes to this class (see code below):
+
+```cpp
+class Shape
+{
+   public:
+   template< typename ShapeT, typename DrawStrategy >
+   Shape( ShapeT const& shape, DrawStrategy drawer ):
+   pimpl_{std::make_unique<ShapeModel<ShapeT,DrawStrategy>>( shape, std::move(drawer) )}
+   {}
+   void draw()const{pimpl_->draw();}
+
+   private:
+   
+   class ShapeConcept
+   {
+      public:
+      virtual ~ShapeConcept() = default;
+      
+      virtual void draw() const = 0;
+   };
+   
+   template< typename ShapeT
+   , typename DrawStrategy >
+   class ShapeModel : public ShapeConcept
+   {
+      public:
+      ShapeModel( ShapeT const& shape, DrawStrategy drawer )
+      : shape_{ shape }
+      , drawer_{ std::move(drawer) }
+      {}
+      
+      void draw() const override { drawer_(shape_); }
+      
+      private:
+      ShapeT shape_;
+      DrawStrategy drawer_;
+   };
+   
+   std::unique_ptr<ShapeConcept> pimpl_;
+   
+};
+```
+
+- Introduce a new `Shape` class and move `ShapeModel` and `ShapeConcept` as private members of this class.
+- Move the vector with `ShapeConcept` unique pointers inside the new `Shape` class. Let's think about what it means:
+  - `ShapeConcept` is just an abstract base class which is implemented by `ShapeModel`.
+  - So, if we were to initialize the `ShapeConcept` vector, we'd have to create the instances of `ShapeModel` like before.
+  - To create `ShapeModel`, we need the `ShapeT` and the `DrawStrategy` types. We have already done this work by defining the `make_shape_model` function.
+  - If we do this type of initialization in the constructor, we would need to templatize that constructor with the required parameters. So, let's reuse `make_shape_model` logic once again, but for construction.
+  - Note that once this is done, `Shape` becomes a truly abstract class. That is, there is nothing that tells what shapes are stored in this class. i.e. the type is ERased. This is called **TypeErasure**. In other words, we have erased the type by wrapping with the `Shape` class.
+  - The draw function now just calls the draw on `pimpl_`
+  - Other changes: now we can create the std::vector of shapes by using the unique pointers to `Shape` directly. We can also pass instances of `Circle`, `GlDrawer`, etc. to `emplace_back`, since `emplace_back` will forward these arguments to the constructor of `Shape` directly. Also, since we're using the value and not unique pointers to `Shape`, we can make function calls using `shape.draw()` (i.e. value semantics)
+- So, what did we achieve
+  - all the complexity is hidden in the `Shape` class now. Therefore, with the `Shape` implementation aside, code is easy to read and has an easy mental model.
+  - code is very maintainable because of the configurability. We can create any shape with any graphics lib without much code.
+
+### Advancing value semantics further
+
+- One of the shortcomings of the `Shape` class above is that it is not possible to copy it because:
+  - `unique_ptr` cannot be copied
+  - even if we were to provide the copy constructor, etc. it would be impossible to write code to initialize `pimpl_` due to the fact that we need to know the template parameters in advance to initialize it
+  - - To fix this issue, we need the `Prototype` design pattern
+
+
+## Prototype Design Pattern
+
+This design pattern is used to create a clone of an object. The abstract base class `Prorotype` declares a pure virtual function `clone` which the concrete classes implement and return their own copy.
+
+![Prototype](images/prototype_design_pattern.png)
+
+
+Now consider the following example
+
+```cpp
+class Animal
+{
+ public:
+   virtual ~Animal() = default;
+   virtual void make_sound() const = 0;
+   virtual std::unique_ptr<Animal> clone() const = 0;
+};
+
+class Sheep : public Animal
+{
+ public:
+   void make_sound() const override;
+   std::unique_ptr<Animal> clone() const override;
+};
+```
+
+See `Tasks/2_Cpp_Software_Design/Prototype/Prototype.cpp` for full implementation. In the implementation of `clone`, the sheep class returns the `*this`. No surprises there.
+
+### Covariant return type
+
+By standard, the child class has to implement the exact same signature as declared by the parent class. i.e. `Sheep` class has to return the unique pointer to `Animal`, even though it should be allowed to return the `Sheep` pointer. i.e. following implementation won't compile:
+
+```cpp
+
+// notice the Sheep instead of Animal in the return type
+std::unique_ptr<Sheep> Sheep::clone() const
+{
+   std::cout << " Sheep::clone()\n";
+   return std::make_unique<Sheep>(*this);
+}
+```
+
+There is one exception to this though. If we were to return the raw pointers everywhere like so:
+
+```cpp
+class Animal
+{
+ public:
+   virtual ~Animal() = default;
+   virtual void make_sound() const = 0;
+   // notice raw pointer return
+   virtual Animal* clone() const = 0;
+};
+
+class Sheep : public Animal
+{
+ public:
+   void make_sound() const override;
+   Sheep* clone() const override;
+};
+```
+
+The above code will compile, because there is an exception for this against the standards. this works because compiler recognizes `Animal*` and `Sheep*` as covariant return types.
+
+Now, let's assume that we would like the Sheep class to return the exact type of itself when cloned, as opposed to Animal. e.g. it maybe handy in figuring out at the calling location what the type of the object being received is, etc. So how can we combine the prototype design pattern and covariant return type idea?
+
+

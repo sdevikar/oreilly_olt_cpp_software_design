@@ -23,7 +23,10 @@ class Animal
  public:
    virtual ~Animal() = default;
    virtual void make_sound() const = 0;
-   virtual std::unique_ptr<Animal> clone() const = 0;
+   std::unique_ptr<Animal> clone() {return std::unique_ptr<Animal>(do_clone());}
+
+   private:
+   virtual Animal* do_clone() const = 0;
 };
 
 
@@ -35,7 +38,11 @@ class Sheep : public Animal
 {
  public:
    void make_sound() const override;
-   std::unique_ptr<Animal> clone() const override;
+   std::unique_ptr<Sheep> clone() {return std::unique_ptr<Sheep>(do_clone());}
+
+   
+private:
+   Sheep* do_clone() const override;
 };
 
 
@@ -49,10 +56,10 @@ void Sheep::make_sound() const
    std::cout << " Sheep::make_sound(): baa!\n";
 }
 
-std::unique_ptr<Animal> Sheep::clone() const
+Sheep* Sheep::do_clone() const
 {
    std::cout << " Sheep::clone()\n";
-   return std::make_unique<Sheep>(*this);
+   return new Sheep{*this};
 }
 
 
