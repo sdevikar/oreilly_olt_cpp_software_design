@@ -315,4 +315,14 @@ The above code will compile, because there is an exception for this against the 
 
 Now, let's assume that we would like the Sheep class to return the exact type of itself when cloned, as opposed to Animal. e.g. it maybe handy in figuring out at the calling location what the type of the object being received is, etc. So how can we combine the prototype design pattern and covariant return type idea?
 
+## Introducing `clone` concept to TypeErasure
 
+To enable copying of objects that we don't know the type of, we can incorporate the `clone` concept to the `TypeEarasure` example. See `Tasks/2_Cpp_Software_Design/Type_Erasure/TypeErasure_1.cpp`
+
+```cpp
+   shapes.emplace_back(shapes[0]); // copy the instance at 0th position here
+```
+
+The above line requires the `Shape` type to be copyable. But as we've seen before, because of TypeErasure, we have no idea what the underlying datatype of shape is, and therefore, we couldn't provide a copy constructor or assignment operator in the Shape class. Implementation wise, it all came down to how to initialize the `pimpl_`
+
+With clone implemented now, we can achieve that. See implementation in the corresponding commit.

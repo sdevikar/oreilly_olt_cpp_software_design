@@ -264,6 +264,15 @@ class Shape
    {}
    void draw()const{pimpl_->draw();}
 
+   Shape(Shape const& other):pimpl_{other.pimpl_->clone()}{
+
+   }
+
+   Shape& operator=(Shape const& other){
+      pimpl_ = other.pimpl_->clone();
+      return *this;
+   }
+
    private:
    
    class ShapeConcept
@@ -272,6 +281,11 @@ class Shape
       virtual ~ShapeConcept() = default;
       
       virtual void draw() const = 0;
+
+      virtual std::unique_ptr<ShapeConcept> clone() const = 0;
+
+      // private:
+      // virtual ShapeConcept* do_clone() const = 0;
    };
    
    template< typename ShapeT
@@ -285,6 +299,13 @@ class Shape
       {}
       
       void draw() const override { drawer_(shape_); }
+
+      // notice here that the return type is unique ptr to ShapeConcept but
+      // we return ShapeModel unique ptr
+      std::unique_ptr<ShapeConcept> clone() const override{
+         return std::make_unique<ShapeModel>(*this);
+      }
+
       
       private:
       ShapeT shape_;
@@ -338,6 +359,7 @@ int main()
    shapes.emplace_back(Circle{2.3}, GLDrawer(gl::Color::red) );
    shapes.emplace_back(Square{1.2}, GLDrawer(gl::Color::green) );
    shapes.emplace_back( Circle{4.1}, GLDrawer(gl::Color::blue) );
+   shapes.emplace_back(shapes[0]); // copy the instance at 0th position here
 
    drawAllShapes( shapes );
 
