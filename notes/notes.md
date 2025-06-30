@@ -326,3 +326,20 @@ To enable copying of objects that we don't know the type of, we can incorporate 
 The above line requires the `Shape` type to be copyable. But as we've seen before, because of TypeErasure, we have no idea what the underlying datatype of shape is, and therefore, we couldn't provide a copy constructor or assignment operator in the Shape class. Implementation wise, it all came down to how to initialize the `pimpl_`
 
 With clone implemented now, we can achieve that. See implementation in the corresponding commit.
+
+### Move operation
+
+The Rule of Five in C++ states that if you define any of the following special member functions, you must define all of them:
+
+- Copy constructor: MyClass(const MyClass&)
+- Copy assignment operator: MyClass& operator=(const MyClass&)
+- Move constructor: MyClass(MyClass&&)
+- Move assignment operator: MyClass& operator=(MyClass&&)
+- Destructor: ~MyClass()
+
+In the code we wrote so far, there are no move operations because as soon as you defined the copy operation, it is up to the user to provide the move operation as well.
+In copy operations, we're simply copying/assigning the `pimpl` unique pointer with the help of the `clone` call. In case  of unique pointers, by design, if you move the unique pointer (in this case the `pimpl`) from a source to a target, the source will end up having a null pointer in `pimpl`.
+So, whenever we combine prototype and type erasure, we must think about whether or not it's ok to 
+
+- leave move unimplemented and hence unavailable
+- implement move and let the  source unique pointer to be null

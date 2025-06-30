@@ -273,6 +273,8 @@ class Shape
       return *this;
    }
 
+   // Move is not available
+
    private:
    
    class ShapeConcept
