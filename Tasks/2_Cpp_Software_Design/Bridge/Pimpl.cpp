@@ -173,8 +173,7 @@ void BatteryGen1::charge()
 
 //---- <Model10.h> --------------------------------------------------------------------------------
 
-//#include <BatteryGen1.h>
-//#include <ElectricEngineGen1.h>
+
 
 namespace eh {
 
@@ -187,8 +186,10 @@ class Model10
    // ... more car-specific functions
 
  private:
-   ElectricEngineGen1 engine_;
-   BatteryGen1        battery_;
+   struct Impl; // Declaration because we only need a pointer to this
+
+   Impl* pimpl_; // pointer to impl (which is an incomplete type)
+
 };
 
 } // namespace eh
@@ -197,21 +198,32 @@ class Model10
 //---- <Model10.cpp> ------------------------------------------------------------------------------
 
 //#include <ElectricCar.h>
+//#include <BatteryGen1.h>
+//#include <ElectricEngineGen1.h>
 #include <iostream>
 
 namespace eh {
 
-Model10::Model10()
+struct Model10::Impl
+{
+   Impl()
    : engine_{ 100 }
    , battery_{ 80.0 }
+   {}
+   ElectricEngineGen1 engine_;
+   BatteryGen1        battery_;
+};   
+
+Model10::Model10()
+: pimpl_{new Impl{}}
 {}
 
 void Model10::drive()
 {
-   engine_.start();
-   battery_.drawPower();
+   pimpl_->engine_.start();
+   pimpl_->battery_.drawPower();
    std::cout << "Driving the 'Model10'...\n";
-   engine_.stop();
+   pimpl_->engine_.stop();
 }
 
 } // namespace eh
