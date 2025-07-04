@@ -173,7 +173,7 @@ void BatteryGen1::charge()
 
 //---- <Model10.h> --------------------------------------------------------------------------------
 
-
+#include <memory>
 
 namespace eh {
 
@@ -188,7 +188,7 @@ class Model10
  private:
    struct Impl; // Declaration because we only need a pointer to this
 
-   Impl* pimpl_; // pointer to impl (which is an incomplete type)
+   std::unique_ptr<Impl> pimpl_; // pointer to impl (which is an incomplete type)
 
 };
 
@@ -215,7 +215,7 @@ struct Model10::Impl
 };   
 
 Model10::Model10()
-: pimpl_{new Impl{}}
+: pimpl_{std::make_unique<Impl>()}
 {}
 
 void Model10::drive()

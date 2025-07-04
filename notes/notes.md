@@ -343,3 +343,90 @@ So, whenever we combine prototype and type erasure, we must think about whether 
 
 - leave move unimplemented and hence unavailable
 - implement move and let the  source unique pointer to be null
+
+
+## Bride design pattern
+
+Even with TypeErasure and External Ploymorphism design pattern, we have non-value symantics like std::make_unique in our Shape implementation. We would like to remove dynamic memory allocation altogether.
+
+### Context
+
+Consider the following example:
+
+```cpp
+class Car
+{
+  public:
+    void drive();
+  
+  private:
+    EngineGen1 engine_;
+    BatteryGen1 battery_;
+
+}
+```
+
+The user of this `Car` class would have to recompile the class every time the underlying classes change their implementation. In other words, the dependency of these classes will cause an ABI break every time the implementation details of the `Car` class has changed.
+
+The easiest and the most obvious way to avoid this ABI break is to use the pointers to these classes instead of the instances. i.e.
+
+```cpp
+// Forward declarations
+struct EngineGen1;
+struct BatteryGen1;
+
+class Car
+{
+  public:
+    void drive();
+  
+  private:
+    std::unique_ptr<EngineGen1> engine_;
+    std::unique_ptr<BatteryGen1> battery_;
+
+}
+```
+
+Even in this case though, replacing the `EngineGen1` or `BatteryGen1` with other classes, e.g. `EngineGen2` will require change in code and recompile.
+
+As the next iteration, we can instead abstract out all the implementation details in a `pimpl` like before.
+
+```cpp
+
+class Car
+{
+  public:
+    void drive();
+    Car() : pimpl_{std::make_unique(ElectricCarImpl{})}
+    {
+      //
+    }
+  
+  private:
+    std::unique_ptr<CarmImpl> pimpl;
+
+}
+
+class CarImpl{
+  public:
+  // some functions
+
+  private:
+  // maybe some private members
+}
+
+class ElectricCarImpl: public CarImpl{
+
+  // this is where we will implement all the details and will contain the ever changing battery, engine, etc.
+}
+```
+
+This is essentially the classic Bridge design pattern
+
+![Bridge design pattern](images/bridge.png)
+
+This looks very similar to strategy design pattern. But the key difference is that the Strategy design pattern is about dependency injection - meaning getting the implementation from someone else. e.g. a graphics library. We may not even know how a particular functionality is implemented.
+The Bridge design pattern is about hiding the implementation details instead. We implement all the concerned dependencies ourself. But we just hide it behind the implementation class.
+
+### Implementation example
+
