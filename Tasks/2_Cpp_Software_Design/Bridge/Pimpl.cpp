@@ -181,6 +181,7 @@ class Model10
 {
  public:
    Model10();
+   ~Model10();
 
    void drive();
    // ... more car-specific functions
@@ -217,6 +218,8 @@ struct Model10::Impl
 Model10::Model10()
 : pimpl_{std::make_unique<Impl>()}
 {}
+
+Model10::~Model10() = default;
 
 void Model10::drive()
 {
