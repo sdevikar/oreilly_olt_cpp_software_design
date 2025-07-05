@@ -428,5 +428,31 @@ This is essentially the classic Bridge design pattern
 This looks very similar to strategy design pattern. But the key difference is that the Strategy design pattern is about dependency injection - meaning getting the implementation from someone else. e.g. a graphics library. We may not even know how a particular functionality is implemented.
 The Bridge design pattern is about hiding the implementation details instead. We implement all the concerned dependencies ourself. But we just hide it behind the implementation class.
 
-### Implementation example
+### Basic Implementation
 
+- In `Tasks/2_Cpp_Software_Design/Bridge/Pimpl.cpp`, in commit `760827903b87b8244391ca233ada9413226d21ba`, we have forward declared the `strct Impl` in the `Model10` class *HEADER* and as a result, we are able to declare a unique pointer to that type.
+  - by doing this, we avoid inclusion of engine and battery header files, but also of the Impl header file. This is the *trick* of the Bridge design pattern
+- We then can initialize this unique pointer in the *SOURCE* file which *DEFINES* the `Impl` class and therefore actually knows about it.
+- All of this works as long as we use the raw pointer to the `Impl`  class. But when we try to use the unique pointer to Impl in the same setup, things will not compile. Here's why:
+- We have not provided destructor to the Model10 class, therefore compiler will make one for us
+- This destructor is actually created in the header file. i.e. `Model10.h` - the class declaration here has the unique pointer to `Impl`. When compiler invokes destructor on this unique pointer, it will also need the destructor for the `Impl` class. But the `Impl` class is unknown to the header file beyond the forward declaration. Therefore, when the header is compiled, the compilation will fail.
+- A simple trick to get around this issue is to declare the Model10 destructor in the header file, but define it as default in the source file.
+
+
+### Fast implementation
+
+See `Solutions/2_Cpp_Software_Design/Bridge/FastPimpl.cpp` for a version of Bridge pattern that's fast because the memory for the impl class is allocated on the buffer on the stack as opposed to dynamically allocated memory. Here, there are two things to note:
+
+1. The use of "placement new", which takes an additional memory location parameter like this: `new(buffer_) Impl{}` indicating that the memory for Impl is allocated in the `buffer_`
+2. Assertions for size and alignment of `Impl` so it can fit and align properly in the buffer
+3. provision of pimpl() which is a tiny function that `reinterpret_cast`s the buffer into the Impl class type
+4. explicit call to Impl destructor from the Model10 destructor
+5. because destructor is defined, move, copy and assignment constructors shall also be implemented
+
+
+### TypeErasure
+
+There are two possible implementations:
+
+- See `Tasks/2_Cpp_Software_Design/Type_Erasure/TypeErasure_SBO_1.cpp` for example of TypeErasure implementation of Bridge pattern - has reinterpret cas
+- See `Tasks/2_Cpp_Software_Design/Type_Erasure/TypeErasure_SBO_1.cpp` - no reinterpret cast
